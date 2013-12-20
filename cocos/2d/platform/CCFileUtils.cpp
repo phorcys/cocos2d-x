@@ -800,5 +800,40 @@ bool FileUtils::isPopupNotify()
     return s_popupNotify;
 }
 
+bool FileUtils::deleteFile( const char* path )
+{
+	CCASSERT(path != NULL , "Invalid parameters.");
+
+	std::string fullPath = fullPathForFilename(path);
+	return remove(path) == 0;
+
+}
+
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32) 
+#include <dirent.h> 
+#include <sys/stat.h> 
+#endif 
+
+bool FileUtils::createDir( const char* path )
+{
+
+	// Create the folder if it doesn't exist 
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32) 
+	DIR *pDir = NULL; 
+
+	pDir = opendir (path); 
+	if (! pDir) 
+	{ 
+		return mkdir(path, S_IRWXU | S_IRWXG | S_IRWXO) == 0; 
+	} 
+#else 
+	if ((GetFileAttributesA(path)) == INVALID_FILE_ATTRIBUTES) 
+	{ 
+		return CreateDirectoryA(path, 0) == TRUE; 
+	} 
+#endif 
+
+	return false;
+}
 NS_CC_END
 

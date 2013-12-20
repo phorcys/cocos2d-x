@@ -230,4 +230,9 @@ string FileUtilsWin32::getWritablePath() const
     return ret;
 }
 
+std::string FileUtilsWin32::getSDWritablePath() const
+{
+	return getWritablePath();
+}
+
 NS_CC_END

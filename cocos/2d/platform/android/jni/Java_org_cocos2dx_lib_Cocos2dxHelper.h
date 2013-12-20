@@ -35,6 +35,7 @@ extern void terminateProcessJNI();
 extern std::string getCurrentLanguageJNI();
 extern std::string getPackageNameJNI();
 extern std::string getFileDirectoryJNI();
+extern std::string getSDFileDirectoryJNI();
 // functions for UserDefault
 extern bool getBoolForKeyJNI(const char* pKey, bool defaultValue);
 extern int getIntegerForKeyJNI(const char* pKey, int defaultValue);

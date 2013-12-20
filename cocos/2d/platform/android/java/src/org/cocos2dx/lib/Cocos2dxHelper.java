@@ -58,6 +58,7 @@ public class Cocos2dxHelper {
 	private static boolean sAccelerometerEnabled;
 	private static String sPackageName;
 	private static String sFileDirectory;
+	private static String sSDFileDirectory;
 	private static Activity sActivity = null;
 	private static Cocos2dxHelperListener sCocos2dxHelperListener;
 	private static ConcurrentLinkedQueue<Runnable> jobs = new ConcurrentLinkedQueue<Runnable>();
@@ -111,6 +112,7 @@ public class Cocos2dxHelper {
 
 		Cocos2dxHelper.sPackageName = applicationInfo.packageName;
 		Cocos2dxHelper.sFileDirectory = activity.getFilesDir().getAbsolutePath();
+		Cocos2dxHelper.sSDFileDirectory = activity.getExternalFilesDir(null).getAbsolutePath();
 		//Cocos2dxHelper.nativeSetApkPath(applicationInfo.sourceDir);
 
 		Cocos2dxHelper.sCocos2dMusic = new Cocos2dxMusic(activity);
@@ -212,6 +214,10 @@ public class Cocos2dxHelper {
 	}
 
 	public static String getCocos2dxWritablePath() {
+		return Cocos2dxHelper.sFileDirectory;
+	}
+
+	public static String getCocos2dxSDWritablePath() {
 		return Cocos2dxHelper.sFileDirectory;
 	}
 

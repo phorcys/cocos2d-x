@@ -268,6 +268,12 @@ public:
      *  @return  The path that can be write/read a file in
      */
     virtual std::string getWritablePath() const = 0;
+
+	/**
+     *  Gets the writable path on SD card like External storage.
+     *  @return  The path that can be write/read a file in
+     */
+    virtual std::string getSDWritablePath() const = 0;
     
     /**
      *  Checks whether a file exists.
@@ -313,6 +319,10 @@ public:
      *  @note This method is used internally.
      */
     virtual ValueVector getValueVectorFromFile(const std::string& filename);
+
+	virtual bool deleteFile(const char* path);
+
+	virtual bool createDir(const char* path);
     
 protected:
     /**

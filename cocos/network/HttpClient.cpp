@@ -32,9 +32,7 @@
 
 #include "platform/CCFileUtils.h"
 
-using namespace cocos2d;
-
-namespace network {
+NS_CC_EXT_BEGIN
 
 static std::mutex       s_requestQueueMutex;
 static std::mutex       s_responseQueueMutex;
@@ -42,6 +40,7 @@ static std::mutex       s_responseQueueMutex;
 static std::mutex		s_SleepMutex;
 static std::condition_variable		s_SleepCondition;
 
+static unsigned long    s_asyncRequestCount = 0;
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
 typedef int int32_t;
@@ -49,17 +48,19 @@ typedef int int32_t;
 
 static bool s_need_quit = false;
 
-static Vector<HttpRequest*>*  s_requestQueue = nullptr;
-static Vector<HttpResponse*>* s_responseQueue = nullptr;
+static Array* s_requestQueue = NULL;
+static Array* s_responseQueue = NULL;
 
 static HttpClient *s_pHttpClient = NULL; // pointer to singleton
 
-static char s_errorBuffer[CURL_ERROR_SIZE] = {0};
+static char s_errorBuffer[CURL_ERROR_SIZE];
 
 typedef size_t (*write_callback)(void *ptr, size_t size, size_t nmemb, void *stream);
 
 static std::string s_cookieFilename = "";
-
+static std::string s_ua = "";
+static std::string s_refer = "";
+static std::string s_proxy = "";
 // Callback function used by libcurl for collect response data
 static size_t writeData(void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -95,11 +96,9 @@ static int processDeleteTask(HttpRequest *request, write_callback callback, void
 
 
 // Worker thread
-void HttpClient::networkThread()
+static void networkThread(void)
 {    
     HttpRequest *request = NULL;
-    
-    auto scheduler = Director::getInstance()->getScheduler();
     
     while (true) 
     {
@@ -115,10 +114,10 @@ void HttpClient::networkThread()
         
         //Get request task from queue
         
-        if (!s_requestQueue->empty())
+        if (0 != s_requestQueue->count())
         {
-            request = s_requestQueue->at(0);
-            s_requestQueue->erase(0);
+            request = dynamic_cast<HttpRequest*>(s_requestQueue->getObjectAtIndex(0));
+            s_requestQueue->removeObjectAtIndex(0);
         }
         
         s_requestQueueMutex.unlock();
@@ -203,23 +202,26 @@ void HttpClient::networkThread()
         
         // add response packet into queue
         s_responseQueueMutex.lock();
-        s_responseQueue->pushBack(response);
+        s_responseQueue->addObject(response);
         s_responseQueueMutex.unlock();
         
-        scheduler->performFunctionInCocosThread(CC_CALLBACK_0(HttpClient::dispatchResponseCallbacks, this));
+        // resume dispatcher selector
+        Director::getInstance()->getScheduler()->resumeTarget(HttpClient::getInstance());
     }
     
     // cleanup: if worker thread received quit signal, clean up un-completed request queue
     s_requestQueueMutex.lock();
-    s_requestQueue->clear();
+    s_requestQueue->removeAllObjects();
     s_requestQueueMutex.unlock();
     
+    s_asyncRequestCount -= s_requestQueue->count();
     
-    if (s_requestQueue != nullptr) {
-        delete s_requestQueue;
-        s_requestQueue = nullptr;
-        delete s_responseQueue;
-        s_responseQueue = nullptr;
+    if (s_requestQueue != NULL) {
+
+        s_requestQueue->release();
+        s_requestQueue = NULL;
+        s_responseQueue->release();
+        s_responseQueue = NULL;
     }
     
 }
@@ -246,10 +248,6 @@ static bool configureCURL(CURL *handle)
     }
     curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
-    
-    // FIXED #3224: The subthread of CCHttpClient interrupts main thread if timeout comes.
-    // Document is here: http://curl.haxx.se/libcurl/c/curl_easy_setopt.html#CURLOPTNOSIGNAL 
-    curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
 
     return true;
 }
@@ -314,6 +312,15 @@ public:
                 return false;
             }
         }
+		if (!s_ua.empty()) {
+			if (!setOption(CURLOPT_USERAGENT, s_ua.c_str())) {
+				return false;
+			}
+		}
+		if (!s_proxy.empty())
+		{
+			setOption(CURLOPT_PROXY, s_proxy.c_str());
+		}
 
         return setOption(CURLOPT_URL, request->getUrl())
                 && setOption(CURLOPT_WRITEFUNCTION, callback)
@@ -357,6 +364,7 @@ static int processPostTask(HttpRequest *request, write_callback callback, void *
             && curl.setOption(CURLOPT_POST, 1)
             && curl.setOption(CURLOPT_POSTFIELDS, request->getRequestData())
             && curl.setOption(CURLOPT_POSTFIELDSIZE, request->getRequestDataSize())
+			&& curl.setOption(CURLOPT_FOLLOWLOCATION, true)
             && curl.perform(responseCode);
     return ok ? 0 : 1;
 }
@@ -397,22 +405,23 @@ HttpClient* HttpClient::getInstance()
 void HttpClient::destroyInstance()
 {
     CCASSERT(s_pHttpClient, "");
+    Director::getInstance()->getScheduler()->unscheduleSelector(schedule_selector(HttpClient::dispatchResponseCallbacks), s_pHttpClient);
     s_pHttpClient->release();
 }
 
 void HttpClient::enableCookies(const char* cookieFile) {
-    if (cookieFile) {
-        s_cookieFilename = std::string(cookieFile);
-    }
-    else {
-        s_cookieFilename = (FileUtils::getInstance()->getWritablePath() + "cookieFile.txt");
+    {
+        s_cookieFilename = (FileUtils::getInstance()->getWritablePath() + cookieFile);
     }
 }
 
 HttpClient::HttpClient()
-: _timeoutForConnect(30)
-, _timeoutForRead(60)
+: _timeoutForConnect(15)
+, _timeoutForRead(120)
 {
+    Director::getInstance()->getScheduler()->scheduleSelector(
+                    schedule_selector(HttpClient::dispatchResponseCallbacks), this, 0, false);
+    Director::getInstance()->getScheduler()->pauseTarget(this);
 }
 
 HttpClient::~HttpClient()
@@ -433,10 +442,14 @@ bool HttpClient::lazyInitThreadSemphore()
         return true;
     } else {
         
-        s_requestQueue = new Vector<HttpRequest*>();
-        s_responseQueue = new Vector<HttpResponse*>();
+        s_requestQueue = new Array();
+        s_requestQueue->init();
         
-        auto t = std::thread(CC_CALLBACK_0(HttpClient::networkThread, this));
+        s_responseQueue = new Array();
+        s_responseQueue->init();
+
+        
+        auto t = std::thread(&networkThread);
         t.detach();
         
         s_need_quit = false;
@@ -458,10 +471,12 @@ void HttpClient::send(HttpRequest* request)
         return;
     }
         
+    ++s_asyncRequestCount;
+    
     request->retain();
     
     s_requestQueueMutex.lock();
-    s_requestQueue->pushBack(request);
+    s_requestQueue->addObject(request);
     s_requestQueueMutex.unlock();
     
     // Notify thread start to work
@@ -469,7 +484,7 @@ void HttpClient::send(HttpRequest* request)
 }
 
 // Poll and notify main thread if responses exists in queue
-void HttpClient::dispatchResponseCallbacks()
+void HttpClient::dispatchResponseCallbacks(float delta)
 {
     // log("CCHttpClient::dispatchResponseCallbacks is running");
     
@@ -477,16 +492,18 @@ void HttpClient::dispatchResponseCallbacks()
     
     s_responseQueueMutex.lock();
 
-    if (!s_responseQueue->empty())
+    if (s_responseQueue->count())
     {
-        response = s_responseQueue->at(0);
-        s_responseQueue->erase(0);
+        response = dynamic_cast<HttpResponse*>(s_responseQueue->getObjectAtIndex(0));
+        s_responseQueue->removeObjectAtIndex(0);
     }
     
     s_responseQueueMutex.unlock();
     
     if (response)
     {
+        --s_asyncRequestCount;
+        
         HttpRequest *request = response->getHttpRequest();
         Object *pTarget = request->getTarget();
         SEL_HttpResponse pSelector = request->getSelector();
@@ -498,8 +515,33 @@ void HttpClient::dispatchResponseCallbacks()
         
         response->release();
     }
+    
+    if (0 == s_asyncRequestCount) 
+    {
+        Director::getInstance()->getScheduler()->pauseTarget(this);
+    }
+    
 }
 
+void HttpClient::initua( const char* new_ua )
+{
+	s_ua = new_ua;
 }
+
+void HttpClient::resetCookies( const char* cookieFile )
+{
+    std::string dp =FileUtils::getInstance()->getWritablePath() +cookieFile;
+	FileUtils::getInstance()->deleteFile(dp.c_str());
+}
+
+void HttpClient::initproxy( const char* new_proxy )
+{
+	s_proxy = new_proxy;
+}
+
+
+
+
+NS_CC_EXT_END
 
 

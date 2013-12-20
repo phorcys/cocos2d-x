@@ -27,12 +27,12 @@
 #define __CCHTTPREQUEST_H__
 
 #include "cocos2d.h"
+#include "ExtensionMacros.h"
 
-#include "network/HttpRequest.h"
-#include "network/HttpResponse.h"
-#include "network/HttpClient.h"
+#include "HttpRequest.h"
+#include "HttpResponse.h"
 
-namespace network {
+NS_CC_EXT_BEGIN
 
 /**
  * @addtogroup Network
@@ -43,7 +43,7 @@ namespace network {
 /** @brief Singleton that handles asynchrounous http requests
  * Once the request completed, a callback will issued in main thread when it provided during make request
  */
-class HttpClient : public cocos2d::Object
+class HttpClient : public Object
 {
 public:
     /** Return the shared instance **/
@@ -54,6 +54,7 @@ public:
 
     /** Enable cookie support. **/
     void enableCookies(const char* cookieFile);
+	void resetCookies(const char* cookieFile);
         
     /**
      * Add a get request to task queue
@@ -88,6 +89,9 @@ public:
      * @return int
      */
     inline int getTimeoutForRead() {return _timeoutForRead;};
+
+	void initua(const char* new_ua);
+	void initproxy(const char* new_proxy);
         
 private:
     HttpClient();
@@ -99,9 +103,8 @@ private:
      * @return bool
      */
     bool lazyInitThreadSemphore();
-    void networkThread();
     /** Poll function called from main thread to dispatch callbacks when http requests finished **/
-    void dispatchResponseCallbacks();
+    void dispatchResponseCallbacks(float delta);
     
 private:
     int _timeoutForConnect;
@@ -113,6 +116,6 @@ private:
 // end of Network group
 /// @}
 
-}
+NS_CC_EXT_END
 
 #endif //__CCHTTPREQUEST_H__

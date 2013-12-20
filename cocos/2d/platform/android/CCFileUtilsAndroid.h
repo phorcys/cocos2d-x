@@ -58,6 +58,7 @@ public:
     virtual unsigned char* getFileData(const char* filename, const char* mode, ssize_t * size);
 
     virtual std::string getWritablePath() const;
+	virtual std::string getSDWritablePath() const;
     virtual bool isFileExist(const std::string& strFilePath) const;
     virtual bool isAbsolutePath(const std::string& strPath) const;
     

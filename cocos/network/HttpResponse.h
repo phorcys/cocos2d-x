@@ -26,16 +26,17 @@
 #define __HTTP_RESPONSE__
 
 #include "cocos2d.h"
-#include "network/HttpRequest.h"
+#include "ExtensionMacros.h"
+#include "HttpRequest.h"
 
-namespace network {
+NS_CC_EXT_BEGIN
 
 /** 
  @brief defines the object which users will receive at onHttpCompleted(sender, HttpResponse) callback
  Please refer to samples/TestCpp/Classes/ExtensionTest/NetworkTest/HttpClientTest.cpp as a sample
  @since v2.0.2
  */
-class HttpResponse : public cocos2d::Object
+class HttpResponse : public Object
 {
 public:
     /** Constructor, it's used by HttpClient internal, users don't need to create HttpResponse manually
@@ -66,7 +67,7 @@ public:
     }
     
     /** Override autorelease method to prevent developers from calling it */
-    cocos2d::Object* autorelease(void)
+    Object* autorelease(void)
     {
         CCASSERT(false, "HttpResponse is used between network thread and ui thread \
                         therefore, autorelease is forbidden here");
@@ -177,6 +178,6 @@ protected:
     
 };
 
-}
+NS_CC_EXT_END
 
 #endif //__HTTP_RESPONSE_H__

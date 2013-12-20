@@ -35,9 +35,11 @@
 #include <signal.h>
 #include <errno.h>
 
+#include "HttpClient.h"
 #include "libwebsockets.h"
 
 using namespace cocos2d;
+using namespace cocos2d::extension;
 
 namespace network {
 

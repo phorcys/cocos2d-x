@@ -244,4 +244,22 @@ string FileUtilsAndroid::getWritablePath() const
     }
 }
 
+string FileUtilsAndroid::getSDWritablePath() const
+{
+    // Fix for Nexus 10 (Android 4.2 multi-user environment)
+    // the path is retrieved through Java Context.getCacheDir() method
+    string dir("");
+    string tmp = getSDFileDirectoryJNI();
+
+    if (tmp.length() > 0)
+    {
+        dir.append(tmp).append("/");
+
+        return dir;
+    }
+    else
+    {
+        return "";
+    }
+}
 NS_CC_END

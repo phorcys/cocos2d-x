@@ -127,7 +127,7 @@ public:
         return &(_requestData.front());
     }
     /** Get the size of request data back */
-    inline int getRequestDataSize()
+    inline ssize_t getRequestDataSize()
     {
         return _requestData.size();
     }

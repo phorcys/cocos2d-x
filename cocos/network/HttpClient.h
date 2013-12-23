@@ -27,14 +27,14 @@
 #define __CCHTTPREQUEST_H__
 
 #include "cocos2d.h"
-#include "ExtensionMacros.h"
+#include "extensions/ExtensionMacros.h"
 
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 
 NS_CC_EXT_BEGIN
 
-/**
+ /**
  * @addtogroup Network
  * @{
  */

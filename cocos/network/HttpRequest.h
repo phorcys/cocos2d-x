@@ -26,13 +26,13 @@
 #define __HTTP_REQUEST_H__
 
 #include "cocos2d.h"
-#include "ExtensionMacros.h"
+#include "extensions/ExtensionMacros.h"
 
 NS_CC_EXT_BEGIN
 
 class HttpClient;
 class HttpResponse;
-typedef void (Object::*SEL_HttpResponse)(HttpClient* client, HttpResponse* response);
+typedef void (cocos2d::Object::*SEL_HttpResponse)(HttpClient* client, HttpResponse* response);
 #define httpresponse_selector(_SELECTOR) (cocos2d::extension::SEL_HttpResponse)(&_SELECTOR)
 
 /** 
@@ -41,7 +41,7 @@ typedef void (Object::*SEL_HttpResponse)(HttpClient* client, HttpResponse* respo
  @since v2.0.2
  */
 
-class HttpRequest : public Object
+class HttpRequest : public cocos2d::Object
 {
 public:
     /** Use this enum type as param in setReqeustType(param) */
@@ -81,7 +81,7 @@ public:
     };
     
     /** Override autorelease method to avoid developers to call it */
-    Object* autorelease(void)
+    cocos2d::Object* autorelease(void)
     {
         CCASSERT(false, "HttpResponse is used between network thread and ui thread \
                  therefore, autorelease is forbidden here");

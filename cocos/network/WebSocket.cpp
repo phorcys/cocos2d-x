@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <errno.h>
 
+#include <cocos2d.h>
 #include "HttpClient.h"
 #include "libwebsockets.h"
 

@@ -715,7 +715,7 @@ void UIWidget::onTouchLongClicked(const cocos2d::Point &touchPoint)
 
 void UIWidget::pushDownEvent()
 {
-    if (_touchEventListener && _touchEventSelector)
+    if (_touchEventListener && _touchEventSelector && _visible)
     {
         (_touchEventListener->*_touchEventSelector)(this,TOUCH_EVENT_BEGAN);
     }
@@ -723,7 +723,7 @@ void UIWidget::pushDownEvent()
 
 void UIWidget::moveEvent()
 {
-    if (_touchEventListener && _touchEventSelector)
+    if (_touchEventListener && _touchEventSelector && _visible)
     {
         (_touchEventListener->*_touchEventSelector)(this,TOUCH_EVENT_MOVED);
     }
@@ -731,7 +731,7 @@ void UIWidget::moveEvent()
 
 void UIWidget::releaseUpEvent()
 {
-    if (_touchEventListener && _touchEventSelector)
+    if (_touchEventListener && _touchEventSelector && _visible)
     {
         (_touchEventListener->*_touchEventSelector)(this,TOUCH_EVENT_ENDED);
     }
@@ -739,7 +739,7 @@ void UIWidget::releaseUpEvent()
 
 void UIWidget::cancelUpEvent()
 {
-    if (_touchEventListener && _touchEventSelector)
+    if (_touchEventListener && _touchEventSelector && _visible)
     {
         (_touchEventListener->*_touchEventSelector)(this,TOUCH_EVENT_CANCELED);
     }

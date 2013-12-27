@@ -72,7 +72,7 @@ void ccArrayEnsureExtraCapacity(ccArray *arr, ssize_t extra)
 {
 	while (arr->max < arr->num + extra)
     {
-        CCLOG("cocos2d: ccCArray: resizing ccArray capacity from [%zd] to [%zd].",
+        CCLOG("cocos2d: ccCArray: resizing ccArray capacity from [%d] to [%d].",
               arr->max,
               arr->max*2);
 

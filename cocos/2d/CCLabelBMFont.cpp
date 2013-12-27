@@ -184,13 +184,13 @@ std::set<unsigned int>* CCBMFontConfiguration::parseConfigFile(const std::string
 {    
     std::string fullpath = FileUtils::getInstance()->fullPathForFilename(controlFile);
     
-    String *contents = String::createWithContentsOfFile(fullpath.c_str());
-
-    CCASSERT(contents, "CCBMFontConfiguration::parseConfigFile | Open file error.");
+    std::string contents = FileUtils::getInstance()->getStringFromFile(fullpath);
     
-    set<unsigned int> *validCharsString = new set<unsigned int>();
+    CCASSERT(!contents.empty(), "CCBMFontConfiguration::parseConfigFile | Open file error.");
+    
+    std::set<unsigned int> *validCharsString = new std::set<unsigned int>();
 
-    if (!contents)
+    if (contents.empty())
     {
         CCLOG("cocos2d: Error parsing FNTfile %s", controlFile.c_str());
         return nullptr;
@@ -198,7 +198,7 @@ std::set<unsigned int>* CCBMFontConfiguration::parseConfigFile(const std::string
 
     // parse spacing / padding
     std::string line;
-    std::string strLeft = contents->getCString();
+    std::string strLeft(contents);
     while (strLeft.length() > 0)
     {
         size_t pos = strLeft.find('\n');
@@ -817,9 +817,6 @@ void LabelBMFont::updateLabel()
             }
             
             skip += justSkipped;
-            
-            if (!characterSprite->isVisible())
-                continue;
 
             if (i >= stringLength)
                 break;
@@ -950,7 +947,7 @@ void LabelBMFont::updateLabel()
         size_t size = multiline_string.size();
         unsigned short* str_new = new unsigned short[size + 1];
 
-        for (int j = 0; j < size; ++j)
+        for (size_t j = 0; j < size; ++j)
         {
             str_new[j] = multiline_string[j];
         }
